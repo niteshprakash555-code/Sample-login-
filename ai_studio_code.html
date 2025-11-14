@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Authentication</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.25rem;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-google {
+            background-color: #db4437;
+            color: white;
+            width: calc(100% - 1rem);
+        }
+        .btn-logout {
+            background-color: #dc3545;
+            color: white;
+        }
+        #user-info {
+            margin-top: 1.5rem;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ddd;
+            margin: 1.5rem 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- This container will show when the user is logged out -->
+        <div id="auth-container">
+            <h1>Login or Sign Up</h1>
+            <div id="login-form">
+                <input type="email" id="email" placeholder="Email" required><br>
+                <input type="password" id="password" placeholder="Password" required><br>
+                <button id="signup-btn" class="btn-secondary">Sign Up</button>
+                <button id="login-btn" class="btn-primary">Login</button>
+            </div>
+            <hr>
+            <button id="google-login-btn" class="btn-google">Sign in with Google</button>
+        </div>
+
+        <!-- This container will show when the user is logged in -->
+        <div id="user-info" style="display: none;">
+            <h1>Welcome!</h1>
+            <p id="user-email"></p>
+            <button id="logout-btn" class="btn-logout">Logout</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (Software Development Kit) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // ===================================================================================
+        // YOUR FIREBASE CONFIGURATION - PASTE YOUR CONFIG OBJECT HERE
+        // ===================================================================================
+        const firebaseConfig = {
+          apiKey: "YOUR_API_KEY",
+          authDomain: "YOUR_AUTH_DOMAIN",
+          projectId: "YOUR_PROJECT_ID",
+          storageBucket: "YOUR_STORAGE_BUCKET",
+          messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+          appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+        // ===================================================================================
+        // DOM ELEMENTS
+        // ===================================================================================
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const signUpButton = document.getElementById('signup-btn');
+        const loginButton = document.getElementById('login-btn');
+        const googleLoginButton = document.getElementById('google-login-btn');
+        const logoutButton = document.getElementById('logout-btn');
+
+        const authContainer = document.getElementById('auth-container');
+        const userInfoContainer = document.getElementById('user-info');
+        const userEmailDisplay = document.getElementById('user-email');
+
+
+        // ===================================================================================
+        // EVENT LISTENERS
+        // ===================================================================================
+
+        // Sign up with email and password
+        signUpButton.addEventListener('click', () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            if (!email || !password) {
+                alert("Please enter both email and password.");
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    console.log('User signed up:', userCredential.user);
+                    alert("Sign up successful!");
+                })
+                .catch((error) => {
+                    console.error('Sign up error:', error);
+                    alert(`Error: ${error.message}`);
+                });
+        });
+
+        // Login with email and password
+        loginButton.addEventListener('click', () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            if (!email || !password) {
+                alert("Please enter both email and password.");
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    console.log('User logged in:', userCredential.user);
+                })
+                .catch((error) => {
+                    console.error('Login error:', error);
+                    alert(`Error: ${error.message}`);
+                });
+        });
+
+        // Sign in with Google
+        googleLoginButton.addEventListener('click', () => {
+            auth.signInWithPopup(googleProvider)
+                .then((result) => {
+                    console.log('Google user signed in:', result.user);
+                }).catch((error) => {
+                    console.error('Google sign-in error:', error);
+                    alert(`Error: ${error.message}`);
+                });
+        });
+
+        // Logout
+        logoutButton.addEventListener('click', () => {
+            auth.signOut().then(() => {
+                console.log('User signed out');
+            }).catch((error) => {
+                console.error('Sign out error:', error);
+            });
+        });
+
+
+        // ===================================================================================
+        // AUTHENTICATION STATE OBSERVER
+        // This function runs whenever the user's login state changes.
+        // ===================================================================================
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in.
+                console.log('Auth state changed: Logged in as', user.email);
+                authContainer.style.display = 'none';
+                userInfoContainer.style.display = 'block';
+                userEmailDisplay.textContent = `You are logged in as: ${user.email}`;
+            } else {
+                // User is signed out.
+                console.log('Auth state changed: Logged out');
+                authContainer.style.display = 'block';
+                userInfoContainer.style.display = 'none';
+                userEmailDisplay.textContent = '';
+            }
+        });
+
+    </script>
+
+</body>
+</html>
